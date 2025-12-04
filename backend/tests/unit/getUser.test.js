@@ -2,8 +2,8 @@
 import mongoose from "mongoose";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import { getUser } from "../../../../users/services/getUser.js";
-import User from "../../../../users/models/User.js";
+import { getUser } from "../../users/services/getUser.js";
+import User from "../../users/models/User.js";
 
 describe("getUser unit tests", () => {
   beforeEach(async () => {
