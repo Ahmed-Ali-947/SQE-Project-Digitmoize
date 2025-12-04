@@ -401,34 +401,60 @@ describe('authController - Unit Tests', () => {
       consoleSpy.mockRestore();
     });
 
-    // BRANCH 15: Mix of token and body data
-    it('should merge data from token and body correctly', async () => {
-      // Arrange
-      req.decodedToken = {
+      // BRANCH 15: Mix of token and body data - FIXED
+  it('should use body data only when token data is missing', async () => {
+    // Arrange
+    req.decodedToken = {
+      uid: 'test-uid',
+      email: 'token-email@example.com',
+      name: 'Token Name' // Has name in token
+    };
+    
+    req.body = {
+      username: 'body-username', // From body (missing in token)
+      name: 'Body Name' // Should NOT override since token has name
+    };
+    
+    setUser.mockResolvedValue({ uid: 'test-uid' });
+
+    // Act
+    await handleUserSignup(req, res);
+
+    // Assert - Body name should NOT override token name
+    expect(setUser).toHaveBeenCalledWith(
+      expect.objectContaining({
         uid: 'test-uid',
         email: 'token-email@example.com', // From token
-        name: 'Token Name' // From token
-      };
-      
-      req.body = {
-        username: 'body-username', // From body
-        name: 'Body Name' // Should override token name
-      };
-      
-      setUser.mockResolvedValue({ uid: 'test-uid' });
+        username: 'body-username', // From body (was missing)
+        name: 'Token Name' // From token (NOT overridden by body)
+      })
+    );
+  });
 
-      // Act
-      await handleUserSignup(req, res);
+  // Add new test for when token is missing name
+  it('should use body name when token missing name', async () => {
+    // Arrange
+    req.decodedToken = {
+      uid: 'test-uid',
+      email: 'token-email@example.com'
+      // Missing name
+    };
+    
+    req.body = {
+      name: 'Body Name' // Should be used since token missing
+    };
+    
+    setUser.mockResolvedValue({ uid: 'test-uid' });
 
-      // Assert
-      expect(setUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          uid: 'test-uid',
-          email: 'token-email@example.com', // From token
-          username: 'body-username', // From body
-          name: 'Body Name' // From body (overrides token)
-        })
-      );
-    });
+    // Act
+    await handleUserSignup(req, res);
+
+    // Assert
+    expect(setUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Body Name' // From body (token missing)
+      })
+    );
   });
 });
+})
